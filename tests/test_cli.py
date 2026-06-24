@@ -28,7 +28,7 @@ class _FakeBuilder:
 
 def _patch_graph(monkeypatch, report):
     """Patch main()'s dependencies so it runs without keys, network, or a real graph."""
-    monkeypatch.setattr(main, "check_keys", lambda: None)
+    monkeypatch.setattr(main, "check_keys", lambda *a, **k: None)
     monkeypatch.setattr(main, "build_graph", lambda: _FakeBuilder(report))
 
     @contextmanager
@@ -81,6 +81,36 @@ def test_check_keys_passes_with_anthropic_fallback(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
     monkeypatch.setenv("TAVILY_API_KEY", "b")
     main.check_keys()  # should not raise
+
+
+def test_check_keys_openalex_does_not_require_tavily(monkeypatch):
+    monkeypatch.setenv("AGIBOT_API_KEY", "a")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    main.check_keys("openalex")  # tavily key not needed for openalex source
+
+
+def test_check_keys_openalex_still_requires_model_key(monkeypatch):
+    monkeypatch.delenv("AGIBOT_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    with pytest.raises(SystemExit) as exc:
+        main.check_keys("openalex")
+    assert exc.value.code != 0
+
+
+def test_parse_args_source_defaults_to_tavily():
+    args = main.parse_args(["t"])
+    assert args.source == "tavily"
+
+
+def test_parse_args_source_can_be_openalex():
+    args = main.parse_args(["t", "--source", "openalex"])
+    assert args.source == "openalex"
+
+
+def test_parse_args_unknown_source_exits():
+    with pytest.raises(SystemExit):
+        main.parse_args(["t", "--source", "scopus"])
 
 
 def test_main_writes_report_file(monkeypatch, tmp_path):

@@ -11,6 +11,7 @@ class ResearchState(TypedDict):
     reflection: str
     iterations: int
     max_iterations: int
+    search_source: str
     report: str
 
 

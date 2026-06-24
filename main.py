@@ -19,15 +19,17 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--out", default="reports", help="报告输出目录")
     parser.add_argument("--thread-id", default=None, help="checkpointer 线程 id（默认按 topic 生成）")
     parser.add_argument("--sqlite", default="research.sqlite", help="checkpointer 落盘路径")
+    parser.add_argument("--source", default="tavily", choices=["tavily", "openalex"],
+                        help="检索源：tavily（网页）| openalex（学术论文）")
     return parser.parse_args(argv)
 
 
-def check_keys() -> None:
+def check_keys(source: str = "tavily") -> None:
     missing = []
     if not get_api_key():
         missing.append("AGIBOT_API_KEY")  # 或回退的 ANTHROPIC_API_KEY
-    if not os.getenv("TAVILY_API_KEY"):
-        missing.append("TAVILY_API_KEY")
+    if source == "tavily" and not os.getenv("TAVILY_API_KEY"):
+        missing.append("TAVILY_API_KEY")  # openalex 源无需 key
     if missing:
         print(f"[error] 缺少环境变量: {', '.join(missing)}", file=sys.stderr)
         sys.exit(1)
@@ -39,10 +41,11 @@ def report_path(out_dir: str, topic: str) -> Path:
 
 def main(argv=None) -> None:
     args = parse_args(argv)
-    check_keys()
+    check_keys(args.source)
 
     thread_id = args.thread_id or slugify(args.topic)
-    inputs = {"topic": args.topic, "max_iterations": args.max_iters}
+    inputs = {"topic": args.topic, "max_iterations": args.max_iters,
+              "search_source": args.source}
     cfg = {"configurable": {"thread_id": thread_id}}
 
     from langgraph.checkpoint.sqlite import SqliteSaver
