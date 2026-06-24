@@ -28,7 +28,7 @@ class _FakeBuilder:
 
 def _patch_graph(monkeypatch, report):
     """Patch main()'s dependencies so it runs without keys, network, or a real graph."""
-    monkeypatch.setattr(main, "check_keys", lambda: None)
+    monkeypatch.setattr(main, "check_keys", lambda *a, **k: None)
     monkeypatch.setattr(main, "build_graph", lambda: _FakeBuilder(report))
 
     @contextmanager
