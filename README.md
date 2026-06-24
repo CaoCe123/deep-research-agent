@@ -26,20 +26,37 @@ START → plan → search → reflect →（条件路由）
 - **持久化**：SQLite checkpointer 落盘，支持断点续跑
 - **观测**：可选 LangSmith 追踪（环境变量开启，零侵入）
 
-## 计划中的用法
-
-> 实现尚在进行中（当前仓库已包含教学文档与设计文档）。
+## 用法
 
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 export ANTHROPIC_API_KEY="sk-ant-..."
 export TAVILY_API_KEY="tvly-..."
 # 可选：开启 LangSmith 追踪
 export LANGSMITH_TRACING=true
 export LANGSMITH_API_KEY="ls-..."
+export LANGSMITH_PROJECT="deep-research-agent"
 
-python main.py "你的研究问题" --max-iters 3
+.venv/bin/python main.py "你的研究问题" --max-iters 3
+# 报告写入 reports/<slug>.md
+```
+
+### CLI 参数
+
+| 参数 | 默认 | 说明 |
+|---|---|---|
+| `topic`（位置参数） | — | 研究问题 |
+| `--max-iters` | `3` | 检索轮数上限（熔断） |
+| `--out` | `reports` | 报告输出目录 |
+| `--thread-id` | 按 topic 生成 | checkpointer 线程 id，同 id 可断点续跑 |
+| `--sqlite` | `research.sqlite` | checkpointer 落盘路径 |
+
+## 开发
+
+```bash
+.venv/bin/pip install pytest
+.venv/bin/python -m pytest -v
 ```
 
 ## 许可证
