@@ -83,6 +83,21 @@ def test_check_keys_passes_with_anthropic_fallback(monkeypatch):
     main.check_keys()  # should not raise
 
 
+def test_check_keys_openalex_does_not_require_tavily(monkeypatch):
+    monkeypatch.setenv("AGIBOT_API_KEY", "a")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    main.check_keys("openalex")  # tavily key not needed for openalex source
+
+
+def test_check_keys_openalex_still_requires_model_key(monkeypatch):
+    monkeypatch.delenv("AGIBOT_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    with pytest.raises(SystemExit) as exc:
+        main.check_keys("openalex")
+    assert exc.value.code != 0
+
+
 def test_parse_args_source_defaults_to_tavily():
     args = main.parse_args(["t"])
     assert args.source == "tavily"

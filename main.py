@@ -24,12 +24,12 @@ def parse_args(argv=None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def check_keys() -> None:
+def check_keys(source: str = "tavily") -> None:
     missing = []
     if not get_api_key():
         missing.append("AGIBOT_API_KEY")  # 或回退的 ANTHROPIC_API_KEY
-    if not os.getenv("TAVILY_API_KEY"):
-        missing.append("TAVILY_API_KEY")
+    if source == "tavily" and not os.getenv("TAVILY_API_KEY"):
+        missing.append("TAVILY_API_KEY")  # openalex 源无需 key
     if missing:
         print(f"[error] 缺少环境变量: {', '.join(missing)}", file=sys.stderr)
         sys.exit(1)
@@ -41,7 +41,7 @@ def report_path(out_dir: str, topic: str) -> Path:
 
 def main(argv=None) -> None:
     args = parse_args(argv)
-    check_keys()
+    check_keys(args.source)
 
     thread_id = args.thread_id or slugify(args.topic)
     inputs = {"topic": args.topic, "max_iterations": args.max_iters,
