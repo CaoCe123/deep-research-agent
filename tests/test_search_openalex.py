@@ -4,6 +4,17 @@ from io import BytesIO
 from deep_research.search import openalex
 
 
+def test_clean_query_strips_punctuation_keeps_words():
+    out = openalex._clean_query("How is DL used for CSI (feedback), detection in MIMO/OFDM?")
+    assert "(" not in out and ")" not in out and "?" not in out and "/" not in out
+    assert "," not in out
+    assert out == "How is DL used for CSI feedback detection in MIMO OFDM"
+
+
+def test_clean_query_keeps_cjk():
+    assert openalex._clean_query("深度学习在无线通信中的应用？") == "深度学习在无线通信中的应用"
+
+
 def test_restore_abstract_orders_words_by_position():
     inv = {"Deep": [0], "learning": [1], "works": [2]}
     assert openalex._restore_abstract(inv) == "Deep learning works"
@@ -65,6 +76,15 @@ def test_search_requests_citation_sort(monkeypatch):
                         _fake_urlopen_factory({"results": []}))
     openalex.search("anything")
     assert "sort=cited_by_count" in openalex.urllib.request.urlopen.last_url
+
+
+def test_search_sends_cleaned_query_in_url(monkeypatch):
+    monkeypatch.setattr(openalex.urllib.request, "urlopen",
+                        _fake_urlopen_factory({"results": []}))
+    openalex.search("a (b)? c")
+    # punctuation must not reach the URL's search param (would 400 otherwise)
+    url = openalex.urllib.request.urlopen.last_url
+    assert "search=a+b+c" in url
 
 
 def test_search_returns_empty_on_error(monkeypatch):
