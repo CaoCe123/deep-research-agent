@@ -28,7 +28,8 @@ def _base_url(model: str) -> str | None:
 
 
 def _make_model(model: str) -> ChatAnthropic:
-    kwargs = {"model": model, "temperature": 0}
+    # 注意：agibot/Bedrock 后端已弃用 temperature 参数（传入会 400），故不设置。
+    kwargs = {"model": model}
     base_url = _base_url(model)
     if base_url:
         kwargs["base_url"] = base_url
