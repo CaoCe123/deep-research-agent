@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 from langchain_anthropic import ChatAnthropic
@@ -6,8 +7,15 @@ from langchain_anthropic import ChatAnthropic
 REASONING_MODEL = "claude-opus-4-8"          # 规划 / 反思 / 写作
 SUMMARY_MODEL = "claude-haiku-4-5-20251001"  # 检索结果摘要
 
-# provider 配置（baseURL 等）从 providers.json 读取；API key 仍走 ANTHROPIC_API_KEY 环境变量。
+# provider 配置（baseURL 等）从 providers.json 读取。
+# API key 从 AGIBOT_API_KEY 读取（兼容回退到 ANTHROPIC_API_KEY），不写进任何文件。
 _PROVIDERS_PATH = Path(__file__).resolve().parent.parent / "providers.json"
+API_KEY_ENV = "AGIBOT_API_KEY"
+API_KEY_ENV_FALLBACK = "ANTHROPIC_API_KEY"
+
+
+def get_api_key() -> str | None:
+    return os.getenv(API_KEY_ENV) or os.getenv(API_KEY_ENV_FALLBACK)
 
 
 def _base_url(model: str) -> str | None:
@@ -24,6 +32,9 @@ def _make_model(model: str) -> ChatAnthropic:
     base_url = _base_url(model)
     if base_url:
         kwargs["base_url"] = base_url
+    api_key = get_api_key()
+    if api_key:
+        kwargs["api_key"] = api_key
     return ChatAnthropic(**kwargs)
 
 

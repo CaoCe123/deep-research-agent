@@ -5,12 +5,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from deep_research.config import get_api_key
 from deep_research.graph import build_graph
 from deep_research.tools import slugify
 
-load_dotenv()  # 从项目根目录的 .env 加载 ANTHROPIC_API_KEY / TAVILY_API_KEY 等
-
-REQUIRED_KEYS = ("ANTHROPIC_API_KEY", "TAVILY_API_KEY")
+load_dotenv()  # 从项目根目录的 .env 加载 AGIBOT_API_KEY / TAVILY_API_KEY 等
 
 
 def parse_args(argv=None) -> argparse.Namespace:
@@ -24,7 +23,11 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 
 def check_keys() -> None:
-    missing = [k for k in REQUIRED_KEYS if not os.getenv(k)]
+    missing = []
+    if not get_api_key():
+        missing.append("AGIBOT_API_KEY")  # 或回退的 ANTHROPIC_API_KEY
+    if not os.getenv("TAVILY_API_KEY"):
+        missing.append("TAVILY_API_KEY")
     if missing:
         print(f"[error] 缺少环境变量: {', '.join(missing)}", file=sys.stderr)
         sys.exit(1)

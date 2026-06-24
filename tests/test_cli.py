@@ -61,6 +61,7 @@ def test_report_path_uses_slug(tmp_path):
 
 
 def test_check_keys_exits_when_missing(monkeypatch):
+    monkeypatch.delenv("AGIBOT_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("TAVILY_API_KEY", raising=False)
     with pytest.raises(SystemExit) as exc:
@@ -68,7 +69,15 @@ def test_check_keys_exits_when_missing(monkeypatch):
     assert exc.value.code != 0
 
 
-def test_check_keys_passes_when_present(monkeypatch):
+def test_check_keys_passes_with_agibot_key(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("AGIBOT_API_KEY", "a")
+    monkeypatch.setenv("TAVILY_API_KEY", "b")
+    main.check_keys()  # should not raise
+
+
+def test_check_keys_passes_with_anthropic_fallback(monkeypatch):
+    monkeypatch.delenv("AGIBOT_API_KEY", raising=False)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
     monkeypatch.setenv("TAVILY_API_KEY", "b")
     main.check_keys()  # should not raise
