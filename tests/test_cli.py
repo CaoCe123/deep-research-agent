@@ -83,6 +83,21 @@ def test_check_keys_passes_with_anthropic_fallback(monkeypatch):
     main.check_keys()  # should not raise
 
 
+def test_parse_args_source_defaults_to_tavily():
+    args = main.parse_args(["t"])
+    assert args.source == "tavily"
+
+
+def test_parse_args_source_can_be_openalex():
+    args = main.parse_args(["t", "--source", "openalex"])
+    assert args.source == "openalex"
+
+
+def test_parse_args_unknown_source_exits():
+    with pytest.raises(SystemExit):
+        main.parse_args(["t", "--source", "scopus"])
+
+
 def test_main_writes_report_file(monkeypatch, tmp_path):
     _patch_graph(monkeypatch, report="# 报告\n[1] 来源")
     out_dir = tmp_path / "reports"
