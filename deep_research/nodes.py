@@ -4,11 +4,18 @@ from . import config
 from . import search as search_pkg
 from .state import Plan, Reflection, ResearchState
 
+_PLAN_PROMPTS = {
+    "tavily": "你是研究规划助手。把用户的研究问题拆成 3-5 个互补、可独立检索的子问题。",
+    "openalex": ("你是学术检索规划助手。把研究主题拆成 3-5 个精准的英文学术检索关键词组，"
+                 "每组 2-5 个核心术语（领域术语 + 方法 + 场景），不要写成完整问句，"
+                 "不要标点。例如：'OTFS anti-jamming deep reinforcement learning'。"),
+}
+
 
 def plan_node(state: ResearchState) -> dict:
     model = config.get_reasoning_model().with_structured_output(Plan)
     plan = model.invoke([
-        SystemMessage(content="你是研究规划助手。把用户的研究问题拆成 3-5 个互补、可独立检索的子问题。"),
+        SystemMessage(content=_PLAN_PROMPTS[state["search_source"]]),
         HumanMessage(content=state["topic"]),
     ])
     return {"sub_questions": plan.sub_questions, "iterations": 0}

@@ -30,6 +30,24 @@ def test_plan_node_returns_subquestions_and_resets_iterations(monkeypatch):
     assert out["iterations"] == 0
 
 
+def test_plan_node_openalex_uses_keyword_prompt(monkeypatch):
+    fake = _FakeModel(structured_obj=Plan(sub_questions=["k1"]))
+    monkeypatch.setattr(config, "get_reasoning_model", lambda: fake)
+
+    nodes.plan_node({"topic": "T", "max_iterations": 3, "search_source": "openalex"})
+    system_text = fake.last_messages[0].content
+    assert "关键词" in system_text
+
+
+def test_plan_node_tavily_uses_subquestion_prompt(monkeypatch):
+    fake = _FakeModel(structured_obj=Plan(sub_questions=["q1"]))
+    monkeypatch.setattr(config, "get_reasoning_model", lambda: fake)
+
+    nodes.plan_node({"topic": "T", "max_iterations": 3, "search_source": "tavily"})
+    system_text = fake.last_messages[0].content
+    assert "子问题" in system_text
+
+
 def test_search_node_first_round_uses_subquestions(monkeypatch):
     from deep_research import search as search_pkg
     monkeypatch.setattr(search_pkg, "get_search_fn",
