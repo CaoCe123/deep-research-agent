@@ -1,4 +1,4 @@
-from deep_research import nodes, config, tools
+from deep_research import nodes, config
 from deep_research.state import Plan, Reflection
 
 
@@ -28,28 +28,36 @@ def test_plan_node_returns_subquestions_and_resets_iterations(monkeypatch):
 
 
 def test_search_node_first_round_uses_subquestions(monkeypatch):
-    monkeypatch.setattr(tools, "tavily_search",
-                        lambda q, **k: [{"query": q, "title": "T", "url": "u", "content": "raw"}])
+    from deep_research import search as search_pkg
+    monkeypatch.setattr(search_pkg, "get_search_fn",
+                        lambda src: (lambda q, **k: [{"query": q, "title": "T", "url": "u",
+                                                      "content": "raw", "authors": [], "year": None,
+                                                      "doi": None, "venue": None, "cited_by": None}]))
     monkeypatch.setattr(config, "get_summary_model", lambda: _FakeModel(content="点要"))
 
-    state = {"sub_questions": ["q1", "q2"], "reflection": "", "iterations": 0, "findings": []}
+    state = {"sub_questions": ["q1", "q2"], "reflection": "", "iterations": 0,
+             "findings": [], "search_source": "tavily"}
     out = nodes.search_node(state)
     assert out["iterations"] == 1
     assert len(out["findings"]) == 2
     assert out["findings"][0]["content"] == "点要"   # summarized, not raw
 
 
-def test_search_node_later_round_uses_reflection(monkeypatch):
-    seen = []
-    def fake_search(q, **k):
-        seen.append(q)
-        return [{"query": q, "title": "T", "url": "u", "content": "raw"}]
-    monkeypatch.setattr(tools, "tavily_search", fake_search)
+def test_search_node_dispatches_on_source(monkeypatch):
+    seen = {}
+    from deep_research import search as search_pkg
+    def fake_get_search_fn(src):
+        seen["src"] = src
+        return lambda q, **k: [{"query": q, "title": "T", "url": "u", "content": "",
+                                "authors": [], "year": None, "doi": None,
+                                "venue": None, "cited_by": None}]
+    monkeypatch.setattr(search_pkg, "get_search_fn", fake_get_search_fn)
     monkeypatch.setattr(config, "get_summary_model", lambda: _FakeModel(content="s"))
 
-    state = {"sub_questions": ["q1"], "reflection": "follow-up", "iterations": 1, "findings": []}
+    state = {"sub_questions": ["q1"], "reflection": "follow-up", "iterations": 1,
+             "findings": [], "search_source": "openalex"}
     nodes.search_node(state)
-    assert seen == ["follow-up"]
+    assert seen["src"] == "openalex"
 
 
 def test_reflect_node_sufficient_clears_reflection(monkeypatch):

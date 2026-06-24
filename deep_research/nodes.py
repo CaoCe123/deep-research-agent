@@ -1,6 +1,7 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from . import config, tools
+from . import config
+from . import search as search_pkg
 from .state import Plan, Reflection, ResearchState
 
 
@@ -23,12 +24,13 @@ def _summarize(raw: str) -> str:
 
 
 def search_node(state: ResearchState) -> dict:
+    search_fn = search_pkg.get_search_fn(state["search_source"])
     queries = state["sub_questions"] if state["iterations"] == 0 else [state["reflection"]]
     new_findings: list[dict] = []
     for q in queries:
-        for hit in tools.tavily_search(q):
+        for hit in search_fn(q):
             hit = dict(hit)
-            hit["content"] = _summarize(hit["content"])
+            hit["content"] = _summarize(hit["content"]) if hit["content"] else ""
             new_findings.append(hit)
     return {"findings": new_findings, "iterations": state["iterations"] + 1}
 
