@@ -8,13 +8,16 @@ class _Resp:
 
 class _FakeModel:
     """Stands in for ChatAnthropic. structured_obj is returned by invoke after
-    with_structured_output(); content_obj is returned by a plain invoke()."""
+    with_structured_output(); content_obj is returned by a plain invoke().
+    Records the last messages list for prompt-branch assertions."""
     def __init__(self, structured_obj=None, content=""):
         self._structured = structured_obj
         self._content = content
+        self.last_messages = None
     def with_structured_output(self, schema):
         return self
     def invoke(self, messages):
+        self.last_messages = messages
         return self._structured if self._structured is not None else _Resp(self._content)
 
 
@@ -22,7 +25,7 @@ def test_plan_node_returns_subquestions_and_resets_iterations(monkeypatch):
     fake = _FakeModel(structured_obj=Plan(sub_questions=["a", "b", "c"]))
     monkeypatch.setattr(config, "get_reasoning_model", lambda: fake)
 
-    out = nodes.plan_node({"topic": "T", "max_iterations": 3})
+    out = nodes.plan_node({"topic": "T", "max_iterations": 3, "search_source": "tavily"})
     assert out["sub_questions"] == ["a", "b", "c"]
     assert out["iterations"] == 0
 
@@ -64,7 +67,8 @@ def test_reflect_node_sufficient_clears_reflection(monkeypatch):
     fake = _FakeModel(structured_obj=Reflection(is_sufficient=True, next_query="ignored"))
     monkeypatch.setattr(config, "get_reasoning_model", lambda: fake)
 
-    out = nodes.reflect_node({"topic": "T", "findings": [{"title": "A", "content": "c"}]})
+    out = nodes.reflect_node({"topic": "T", "search_source": "tavily",
+                              "findings": [{"title": "A", "content": "c"}]})
     assert out["reflection"] == ""
 
 
@@ -72,7 +76,7 @@ def test_reflect_node_insufficient_returns_next_query(monkeypatch):
     fake = _FakeModel(structured_obj=Reflection(is_sufficient=False, next_query="dig deeper"))
     monkeypatch.setattr(config, "get_reasoning_model", lambda: fake)
 
-    out = nodes.reflect_node({"topic": "T", "findings": []})
+    out = nodes.reflect_node({"topic": "T", "search_source": "tavily", "findings": []})
     assert out["reflection"] == "dig deeper"
 
 
