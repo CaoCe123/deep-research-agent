@@ -3,8 +3,12 @@ import os
 import sys
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from deep_research.graph import build_graph
 from deep_research.tools import slugify
+
+load_dotenv()  # 从项目根目录的 .env 加载 ANTHROPIC_API_KEY / TAVILY_API_KEY 等
 
 REQUIRED_KEYS = ("ANTHROPIC_API_KEY", "TAVILY_API_KEY")
 
