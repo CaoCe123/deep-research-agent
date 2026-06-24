@@ -71,11 +71,20 @@ def test_search_maps_fields(monkeypatch):
     assert f["url"] == "https://doi.org/10.1/x"
 
 
-def test_search_requests_citation_sort(monkeypatch):
+def test_search_uses_relevance_sort_not_citations(monkeypatch):
     monkeypatch.setattr(openalex.urllib.request, "urlopen",
                         _fake_urlopen_factory({"results": []}))
     openalex.search("anything")
-    assert "sort=cited_by_count" in openalex.urllib.request.urlopen.last_url
+    # relevance ranking (OpenAlex default) — must NOT force citation sort,
+    # which would bury narrow-topic papers under off-topic high-cite surveys
+    assert "sort=cited_by_count" not in openalex.urllib.request.urlopen.last_url
+
+
+def test_search_requests_multiple_results(monkeypatch):
+    monkeypatch.setattr(openalex.urllib.request, "urlopen",
+                        _fake_urlopen_factory({"results": []}))
+    openalex.search("anything")
+    assert "per-page=8" in openalex.urllib.request.urlopen.last_url
 
 
 def test_search_sends_cleaned_query_in_url(monkeypatch):

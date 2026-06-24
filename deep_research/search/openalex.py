@@ -27,11 +27,15 @@ def _restore_abstract(inverted_index) -> str:
     return " ".join(word for _, word in positions)
 
 
-def search(query: str, max_results: int = 3) -> list[dict]:
-    """Search OpenAlex (no API key), sorted by citation count desc."""
+def search(query: str, max_results: int = 8) -> list[dict]:
+    """Search OpenAlex (no API key).
+
+    Uses OpenAlex's default relevance ranking — for narrow technical topics
+    (e.g. "OTFS anti-jamming") relevance surfaces on-topic papers, whereas
+    citation-count sorting drowns them under highly-cited but off-topic surveys.
+    """
     params = {
         "search": _clean_query(query),
-        "sort": "cited_by_count:desc",
         "per-page": max_results,
         "mailto": "deep-research-agent@example.com",
     }
