@@ -1,0 +1,25 @@
+{
+  "provider": {
+    "claude-opus-4-8": {
+      "protocol": "anthropic",
+      "vendor": "agibot",
+      "baseURL": "https://lingzhi.agibot.com",
+      "model": "claude-opus-4-8",
+      "auth": "bearer"
+    },
+    "claude-sonnet-4-6": {
+      "protocol": "anthropic",
+      "vendor": "agibot",
+      "baseURL": "https://lingzhi.agibot.com",
+      "model": "claude-sonnet-4-6",
+      "auth": "bearer"
+    },
+    "claude-haiku-4-5-20251001": {
+      "protocol": "anthropic",
+      "vendor": "agibot",
+      "baseURL": "https://lingzhi.agibot.com",
+      "model": "claude-haiku-4-5-20251001",
+      "auth": "bearer"
+    }
+  }
+}

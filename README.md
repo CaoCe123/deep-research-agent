@@ -31,7 +31,8 @@ START → plan → search → reflect →（条件路由）
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
-export ANTHROPIC_API_KEY="sk-ant-..."
+# API key —— 写到环境变量 ANTHROPIC_API_KEY（agibot 的 bearer token 也填这里）
+export ANTHROPIC_API_KEY="<你的-agibot-bearer-token>"
 export TAVILY_API_KEY="tvly-..."
 # 可选：开启 LangSmith 追踪
 export LANGSMITH_TRACING=true
@@ -41,6 +42,16 @@ export LANGSMITH_PROJECT="deep-research-agent"
 .venv/bin/python main.py "你的研究问题" --max-iters 3
 # 报告写入 reports/<slug>.md
 ```
+
+### Provider 配置（endpoint）
+
+模型的 endpoint 等信息在仓库根目录的 [`providers.json`](./providers.json) 中配置，
+当前指向 agibot 的 `https://lingzhi.agibot.com`（Anthropic 协议、bearer 鉴权）。
+`config.py` 会读取其中的 `baseURL` 并传给 `ChatAnthropic`。
+
+> **API key 写在哪里？** 不写进 `providers.json`，而是放到环境变量 **`ANTHROPIC_API_KEY`**
+> （上面的 `export` 那一行）。agibot 的 bearer token 直接填到这个变量即可——
+> `ChatAnthropic` 会以 bearer 方式带上它访问 `baseURL`。
 
 ### CLI 参数
 
