@@ -98,6 +98,24 @@ def test_reflect_node_insufficient_returns_next_query(monkeypatch):
     assert out["reflection"] == "dig deeper"
 
 
+def test_reflect_node_openalex_uses_keyword_prompt(monkeypatch):
+    fake = _FakeModel(structured_obj=Reflection(is_sufficient=False, next_query="kw"))
+    monkeypatch.setattr(config, "get_reasoning_model", lambda: fake)
+
+    nodes.reflect_node({"topic": "T", "search_source": "openalex", "findings": []})
+    system_text = fake.last_messages[0].content
+    assert "关键词" in system_text
+
+
+def test_reflect_node_tavily_uses_default_prompt(monkeypatch):
+    fake = _FakeModel(structured_obj=Reflection(is_sufficient=False, next_query="q"))
+    monkeypatch.setattr(config, "get_reasoning_model", lambda: fake)
+
+    nodes.reflect_node({"topic": "T", "search_source": "tavily", "findings": []})
+    system_text = fake.last_messages[0].content
+    assert "评估资料是否足够回答研究问题" in system_text
+
+
 def test_format_references_academic(monkeypatch):
     findings = [{"title": "A CNN paper", "url": "https://doi.org/10.1/x",
                  "authors": ["Jane Doe", "John Roe"], "year": 2021,

@@ -42,11 +42,18 @@ def search_node(state: ResearchState) -> dict:
     return {"findings": new_findings, "iterations": state["iterations"] + 1}
 
 
+_REFLECT_PROMPTS = {
+    "tavily": "评估资料是否足够回答研究问题，并指出缺口。",
+    "openalex": ("评估资料是否足够写一份学术综述，并指出缺口。若不足，"
+                 "next_query 给出补充检索的精准英文学术关键词组（2-5 个术语，不要问句、不要标点）。"),
+}
+
+
 def reflect_node(state: ResearchState) -> dict:
     model = config.get_reasoning_model().with_structured_output(Reflection)
     digest = "\n".join(f"- {f['title']}: {f['content'][:200]}" for f in state["findings"])
     result = model.invoke([
-        SystemMessage(content="评估资料是否足够回答研究问题，并指出缺口。"),
+        SystemMessage(content=_REFLECT_PROMPTS[state["search_source"]]),
         HumanMessage(content=f"研究问题：{state['topic']}\n\n已有资料：\n{digest}"),
     ])
     return {"reflection": "" if result.is_sufficient else result.next_query}
