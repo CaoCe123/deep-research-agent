@@ -76,9 +76,42 @@ def test_reflect_node_insufficient_returns_next_query(monkeypatch):
     assert out["reflection"] == "dig deeper"
 
 
-def test_write_node_produces_report(monkeypatch):
-    monkeypatch.setattr(config, "get_reasoning_model", lambda: _FakeModel(content="# 报告\n[1] ..."))
+def test_format_references_academic(monkeypatch):
+    findings = [{"title": "A CNN paper", "url": "https://doi.org/10.1/x",
+                 "authors": ["Jane Doe", "John Roe"], "year": 2021,
+                 "doi": "https://doi.org/10.1/x", "venue": "IEEE Trans. Signal",
+                 "cited_by": 99, "content": "c"}]
+    refs = nodes._format_references(findings)
+    assert refs.startswith("## 参考文献")
+    assert "[1]" in refs
+    assert "Jane Doe" in refs and "John Roe" in refs
+    assert "IEEE Trans. Signal" in refs and "2021" in refs
+    assert "DOI:https://doi.org/10.1/x" in refs
+    assert "被引 99 次" in refs
 
-    out = nodes.write_node({"topic": "T",
-                            "findings": [{"title": "A", "url": "u", "content": "c"}]})
-    assert out["report"].startswith("# 报告")
+
+def test_format_references_truncates_authors():
+    findings = [{"title": "T", "url": "u",
+                 "authors": ["A", "B", "C", "D", "E"], "year": 2020,
+                 "doi": "10.1/y", "venue": "V", "cited_by": 0, "content": "c"}]
+    refs = nodes._format_references(findings)
+    assert "A, B, C 等" in refs   # first 3 + 等
+
+
+def test_format_references_web_fallback():
+    findings = [{"title": "Web Page", "url": "http://x", "authors": [],
+                 "year": None, "doi": None, "venue": None, "cited_by": None, "content": "c"}]
+    refs = nodes._format_references(findings)
+    assert "[1] Web Page — http://x" in refs
+
+
+def test_write_node_appends_reference_list(monkeypatch):
+    monkeypatch.setattr(config, "get_reasoning_model",
+                        lambda: _FakeModel(content="# 综述正文\n[1] ..."))
+    findings = [{"title": "A", "url": "https://doi.org/10.1/x", "authors": ["Jane Doe"],
+                 "year": 2021, "doi": "https://doi.org/10.1/x", "venue": "IEEE", "cited_by": 5,
+                 "content": "c"}]
+    out = nodes.write_node({"topic": "T", "findings": findings})
+    assert out["report"].startswith("# 综述正文")
+    assert "## 参考文献" in out["report"]
+    assert "Jane Doe" in out["report"]
