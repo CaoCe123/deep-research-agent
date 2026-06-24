@@ -155,3 +155,52 @@ def test_write_node_appends_reference_list(monkeypatch):
     assert out["report"].startswith("# 综述正文")
     assert "## 参考文献" in out["report"]
     assert "Jane Doe" in out["report"]
+
+
+def test_dedupe_findings_by_doi():
+    findings = [
+        {"title": "Paper A v1", "doi": "10.1/x", "authors": [], "url": "u1"},
+        {"title": "Paper A v2", "doi": "10.1/x", "authors": [], "url": "u2"},
+        {"title": "Paper B", "doi": "10.1/y", "authors": [], "url": "u3"},
+    ]
+    out = nodes._dedupe_findings(findings)
+    assert [f["doi"] for f in out] == ["10.1/x", "10.1/y"]
+    assert out[0]["title"] == "Paper A v1"   # first occurrence kept
+
+
+def test_dedupe_findings_by_title_when_no_doi():
+    findings = [
+        {"title": "Same Title", "doi": None, "authors": [], "url": "u1"},
+        {"title": "same title", "doi": None, "authors": [], "url": "u2"},  # case-insensitive
+        {"title": "Different", "doi": None, "authors": [], "url": "u3"},
+    ]
+    out = nodes._dedupe_findings(findings)
+    assert len(out) == 2
+    assert out[0]["title"] == "Same Title" and out[1]["title"] == "Different"
+
+
+def test_dedupe_findings_preserves_order_and_distinct():
+    findings = [
+        {"title": "A", "doi": "10.1/a", "authors": [], "url": "u"},
+        {"title": "B", "doi": "10.1/b", "authors": [], "url": "u"},
+        {"title": "C", "doi": "10.1/c", "authors": [], "url": "u"},
+    ]
+    out = nodes._dedupe_findings(findings)
+    assert [f["doi"] for f in out] == ["10.1/a", "10.1/b", "10.1/c"]
+
+
+def test_write_node_dedupes_before_report(monkeypatch):
+    monkeypatch.setattr(config, "get_reasoning_model",
+                        lambda: _FakeModel(content="# 综述"))
+    findings = [
+        {"title": "Dup Paper", "url": "https://doi.org/10.1/x", "authors": ["A"],
+         "year": 2021, "doi": "https://doi.org/10.1/x", "venue": "IEEE", "cited_by": 5,
+         "content": "c"},
+        {"title": "Dup Paper", "url": "https://doi.org/10.1/x", "authors": ["A"],
+         "year": 2021, "doi": "https://doi.org/10.1/x", "venue": "IEEE", "cited_by": 5,
+         "content": "c"},
+    ]
+    out = nodes.write_node({"topic": "T", "findings": findings})
+    # reference list must contain [1] but not [2] (only one unique paper)
+    assert "[1]" in out["report"]
+    assert "[2]" not in out["report"]

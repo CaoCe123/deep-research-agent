@@ -77,8 +77,19 @@ def _format_references(findings: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _dedupe_findings(findings: list[dict]) -> list[dict]:
+    """Dedupe by DOI (fall back to lowercased title); keep first occurrence, preserve order."""
+    seen, out = set(), []
+    for f in findings:
+        key = f.get("doi") or (f.get("title") or "").strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            out.append(f)
+    return out
+
+
 def write_node(state: ResearchState) -> dict:
-    findings = state["findings"]
+    findings = _dedupe_findings(state["findings"])
     sources = "\n".join(
         f"[{i + 1}] {f['title']}（{f.get('venue') or 'web'}, {f.get('year') or 'n.d.'}）\n{f['content'][:500]}"
         for i, f in enumerate(findings)
